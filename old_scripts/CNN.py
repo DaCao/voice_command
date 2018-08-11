@@ -1,4 +1,6 @@
 import pickle
+import matplotlib as mpl
+mpl.use('TkAgg')
 import matplotlib.pyplot as plt
 from scipy.signal import convolve
 import numpy as np
@@ -7,7 +9,7 @@ import tensorflow as tf
 
 # import data
 # frequencies, times, spectogram, label
-with open('training_v2.pickle', 'rb') as handle:
+with open('training_v3.pickle', 'rb') as handle:
     parsed_dict = pickle.load(handle)
 
 
@@ -65,7 +67,7 @@ def conv_model(fingerprint_input, is_training, dropout_prob):
     input_frequency_size = shapes[0] # 40
     input_time_size = shapes[1] # 0
     fingerprint_4d = tf.reshape(fingerprint_input,[-1, input_time_size, input_frequency_size, 1]) # [batch, in_height, in_width, in_channels]
-    first_filter_width = 128
+    first_filter_width = 8
     first_filter_height = 20
     first_filter_count = 64
     first_weights = tf.Variable(
@@ -74,10 +76,6 @@ def conv_model(fingerprint_input, is_training, dropout_prob):
     first_conv = tf.nn.conv2d(fingerprint_4d, first_weights, [1, 1, 1, 1],
                               'SAME') + first_bias
     first_relu = tf.nn.relu(first_conv)
-    # if is_training:
-    #     first_dropout = tf.nn.dropout(first_relu, dropout_prob)
-    # else:
-    #     first_dropout = first_relu
     first_dropout = tf.where(is_training,tf.nn.dropout(first_relu, dropout_prob),first_relu)
     max_pool = tf.nn.max_pool(first_dropout, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
     second_filter_width = 4
@@ -94,10 +92,6 @@ def conv_model(fingerprint_input, is_training, dropout_prob):
     second_conv = tf.nn.conv2d(max_pool, second_weights, [1, 1, 1, 1],
                                'SAME') + second_bias
     second_relu = tf.nn.relu(second_conv)
-    # if is_training:
-    #     second_dropout = tf.nn.dropout(second_relu, dropout_prob)
-    # else:
-    #     second_dropout = second_relu
     second_dropout = tf.where(is_training, tf.nn.dropout(second_relu, dropout_prob), second_relu)
     second_conv_shape = second_dropout.get_shape()
     second_conv_output_width = second_conv_shape[2]
